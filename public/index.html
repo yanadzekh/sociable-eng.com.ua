@@ -275,7 +275,7 @@
   .field textarea{resize:vertical; min-height:80px;}
   .hp-field{position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none; height:0; overflow:hidden;}
   .form-card .btn{width:100%; margin-top:22px;}
-  .form-msg{margin-top:14px; font-size:13.5px; display:none;}
+  .form-msg{margin-top:14px; font-size:13.5px; display:none; color:#FF9B9B; font-weight:600;}
   .form-msg.show{display:block;}
   .form-success{ text-align:center; padding:10px 0;}
   .form-success h3{color:var(--paper);}
@@ -648,7 +648,14 @@
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify(payload)
       });
-      if(!res.ok) throw new Error('Request failed');
+
+      var resData = null;
+      try { resData = await res.json(); } catch(parseErr) { /* відповідь не JSON */ }
+
+      if(!res.ok || !resData || resData.ok !== true){
+        var serverError = (resData && resData.error) ? resData.error : ('Помилка сервера (' + res.status + ')');
+        throw new Error(serverError);
+      }
 
       // Google Ads conversion tracking placeholder — вставити реальний label
       // if (typeof gtag === 'function') { gtag('event', 'conversion', {'send_to': 'AW-XXXXXXXXXX/XXXXXXXXX'}); }
@@ -656,7 +663,7 @@
       document.getElementById('formStep').style.display = 'none';
       document.getElementById('successStep').style.display = 'block';
     }catch(err){
-      formMsg.textContent = 'Щось пішло не так. Спробуйте ще раз або напишіть нам в Instagram.';
+      formMsg.textContent = 'Помилка: ' + (err && err.message ? err.message : 'щось пішло не так') + '. Спробуйте ще раз або напишіть нам в Instagram.';
       formMsg.classList.add('show');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Надіслати заявку';
