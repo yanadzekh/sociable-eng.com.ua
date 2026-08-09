@@ -56,6 +56,18 @@
 }
 </script>
 
+<!-- Google tag (gtag.js) — вставити реальні ID перед запуском реклами -->
+<!--
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+  // gtag('config', 'AW-XXXXXXXXXX'); // Google Ads ID
+</script>
+-->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -128,7 +140,7 @@
   }
   .nav{ display:flex; align-items:center; justify-content:space-between; padding:14px 0;}
   .brand{ display:flex; align-items:center; gap:10px; text-decoration:none; cursor:pointer; background:none; border:none; padding:0;}
-  .brand-mark{width:40px; height:40px; border-radius:50%; background:var(--ink); color:var(--paper); display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-weight:700; font-size:17px; flex-shrink:0;}
+  .brand img{width:40px; height:40px; border-radius:50%;}
   .brand-word{font-family:var(--serif); font-weight:700; font-size:21px; color:var(--ink);}
   .nav-links{ display:flex; align-items:center; gap:30px; list-style:none; margin:0; padding:0;}
   .nav-links a{ text-decoration:none; font-size:15px; font-weight:600; color:var(--ink-soft); transition:color .15s;}
@@ -183,61 +195,33 @@
   /* SECTION HEAD */
   .section{ padding:96px 0;}
   .section-head{ max-width:640px; margin-bottom:52px;}
-  .section-head.center{margin-left:auto; margin-right:auto; text-align:center;}
   .section-head h2{ font-size:clamp(28px,3.6vw,42px); margin-top:14px;}
   .section-head p{ margin-top:14px; font-size:17px; color:var(--ink-soft);}
   .alt{background:var(--paper-2);}
 
-  /* PROGRAM BLOCKS (photo + text, alternating) — inspired by reference layout */
-  .program{ display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;}
-  .program + .program{margin-top:88px;}
-  .program.rev .program-media{order:2;}
-  .program.rev .program-text{order:1;}
-  .program-media{
-    border-radius:26px; overflow:hidden; box-shadow:var(--shadow); aspect-ratio:4/3.1;
-    position:relative; display:flex; align-items:flex-end; padding:26px;
-    background:linear-gradient(135deg, var(--violet) 0%, var(--flamingo) 100%);
-    background-size:cover; background-position:center;
-  }
-  .program-badge{
-    position:relative; z-index:2; background:rgba(255,249,240,0.92); backdrop-filter:blur(6px);
-    color:var(--ink); font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
-    padding:8px 14px; border-radius:100px; font-weight:600;
-  }
-  .program-text h3{font-size:clamp(24px,3vw,32px);}
-  .program-text h3 span{color:var(--ink-soft); font-weight:400;}
-  .program-text p{margin-top:16px; font-size:16.5px; color:var(--ink-soft); line-height:1.65;}
-  .program-price{
-    display:inline-flex; align-items:center; gap:10px; margin-top:22px; padding:10px 18px 10px 10px;
-    background:var(--paper-2); border-radius:100px; font-size:14.5px; font-weight:700;
-  }
-  .program-price .num{
-    width:30px; height:30px; border-radius:50%; background:var(--ink); color:var(--paper);
-    display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:13px;
-  }
-
-  /* PHOTO CARD GRID — mimics bold text-over-image tiles */
-  .photo-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px;}
-  .photo-card{
+  /* SERVICES — photo cards */
+  .services-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px;}
+  .svc-card{
     position:relative; border-radius:var(--radius); overflow:hidden; min-height:280px;
     display:flex; align-items:flex-end; padding:30px; box-shadow:var(--shadow);
-    background-size:cover; background-position:center;
+    background-size:cover; background-position:center; transition:transform .2s ease;
   }
-  .photo-card::after{
+  .svc-card:hover{ transform:translateY(-4px);}
+  .svc-card::after{
     content:""; position:absolute; inset:0; z-index:1;
-    background:linear-gradient(180deg, rgba(36,28,61,0.05) 0%, rgba(36,28,61,0.78) 78%);
+    background:linear-gradient(180deg, rgba(36,28,61,0.08) 0%, rgba(36,28,61,0.82) 78%);
   }
-  .photo-card.pc1{background-color:var(--marigold);}
-  .photo-card.pc2{background-color:var(--lagoon);}
-  .photo-card.pc3{background-color:var(--flamingo);}
-  .photo-card.pc4{background-color:var(--violet);}
-  .photo-card-inner{position:relative; z-index:2;}
-  .photo-card-tag{
+  .svc-card.sc1{background-color:var(--marigold);}
+  .svc-card.sc2{background-color:var(--lagoon);}
+  .svc-card.sc3{background-color:var(--flamingo);}
+  .svc-card.sc4{background-color:var(--violet);}
+  .svc-inner{position:relative; z-index:2;}
+  .svc-tag{
     font-family:var(--mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--marigold); font-weight:700; display:block; margin-bottom:10px;
   }
-  .photo-card h3{color:var(--paper); font-size:23px;}
-  .photo-card p{color:rgba(255,249,240,0.82); margin-top:10px; font-size:15px;}
+  .svc-card h3{ color:var(--paper); font-size:22px;}
+  .svc-card p{ margin-top:10px; color:rgba(255,249,240,0.85); font-size:15px;}
 
   /* PROCESS */
   .process-list{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; counter-reset:step;}
@@ -252,6 +236,13 @@
   .step:last-child .step-line{display:none;}
 
   /* WHY */
+  .why-head-card{
+    max-width:none; background:linear-gradient(135deg, var(--ember) 0%, var(--violet) 100%);
+    border-radius:var(--radius); padding:44px 40px; margin-bottom:32px; box-shadow:var(--shadow);
+  }
+  .why-head-card .eyebrow{ color:rgba(255,249,240,0.88);}
+  .why-head-card .eyebrow::before{ background:var(--paper);}
+  .why-head-card h2{ color:var(--paper); max-width:760px;}
   .why-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
   .why-card{ padding:34px 26px; border-radius:var(--radius); color:var(--paper);}
   .why-card:nth-child(1){background:var(--violet);}
@@ -305,15 +296,13 @@
     .burger{display:block;}
     .hero-grid{grid-template-columns:1fr; gap:40px;}
     .hero{padding:44px 0 60px;}
-    .program{grid-template-columns:1fr; gap:28px;}
-    .program.rev .program-media{order:1;}
-    .program.rev .program-text{order:2;}
-    .photo-grid{grid-template-columns:1fr;}
+    .services-grid{grid-template-columns:1fr;}
     .process-list{grid-template-columns:1fr 1fr; row-gap:34px;}
     .step-line{display:none;}
     .why-grid{grid-template-columns:1fr;}
     .contact-grid{grid-template-columns:1fr;}
     .section{padding:64px 0;}
+    .why-head-card{padding:30px 24px;}
     .form-card{padding:26px;}
   }
   @media (max-width:520px){
@@ -339,11 +328,10 @@
 <header>
   <div class="wrap nav">
     <button class="brand" onclick="document.getElementById('top').scrollIntoView({behavior:'smooth'})" aria-label="На початок сторінки">
-      <span class="brand-mark">Se</span>
+      <img src="assets/logo-512.png" alt="Sociable.eng — школа живої англійської">
       <span class="brand-word">Sociable.eng</span>
     </button>
     <ul class="nav-links">
-      <li><a href="#programs">Програми</a></li>
       <li><a href="#services">Послуги</a></li>
       <li><a href="#process">Як ми працюємо</a></li>
       <li><a href="#why">Чому ми</a></li>
@@ -362,7 +350,6 @@
 <div class="mobile-menu" id="mobileMenu">
   <button class="close-btn" id="closeMenuBtn" aria-label="Закрити меню">×</button>
   <ul>
-    <li><a href="#programs">Програми</a></li>
     <li><a href="#services">Послуги</a></li>
     <li><a href="#process">Як ми працюємо</a></li>
     <li><a href="#why">Чому ми</a></li>
@@ -380,7 +367,7 @@
         <p class="hero-desc">Індивідуальна програма під вашу ціль — від співбесіди до фітнес-тренувань англійською. Без сухої граматики заради граматики: більше живої мови, гнучкий графік і підхід, підлаштований під вас.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="#contact">Записатись на пробне заняття</a>
-          <a class="btn btn-ghost" href="#programs">Переглянути програми</a>
+          <a class="btn btn-ghost" href="#services">Переглянути послуги</a>
         </div>
         <p class="hero-note">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12L14 4" stroke="#6B3FDD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -411,73 +398,38 @@
     </div>
   </section>
 
-  <!-- PROGRAMS: photo + text blocks, alternating, like the reference site -->
-  <section class="section alt" id="programs">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow">Програми навчання</span>
-        <h2>Ми пропонуємо два формати занять</h2>
-        <p>Оберіть формат, що вам зручний — а тему, галузь і графік ми підлаштуємо під вас на першій зустрічі.</p>
-      </div>
-
-      <div class="program">
-        <div class="program-media" style="background-image:url('https://images.unsplash.com/photo-1544717305-2782549b5136?q=80&amp;w=1200&amp;auto=format&amp;fit=crop');" role="img" aria-label="Індивідуальне заняття англійською онлайн">
-          <span class="program-badge">Формат 1</span>
-        </div>
-        <div class="program-text">
-          <h3>Індивідуальні заняття. <span>Персональна програма під вашу ціль.</span></h3>
-          <p>Заняття 1-на-1 з викладачем: повна увага, темп і теми — виключно ваші. Ми розмовляємо про те, що цікаво саме вам — від співбесіди до подорожей, — і рухаємось без зайвого поспіху, поки знання не почнуть звучати у вашій мові природно.</p>
-          <p>Кожне заняття будується на живому діалозі, а не на переказі підручника: граматика й лексика підключаються лише тоді, коли потрібні для розмови.</p>
-          <div class="program-price"><span class="num">1</span> Гнучкий графік, персональний план і зворотний зв'язок після кожного заняття</div>
-        </div>
-      </div>
-
-      <div class="program rev">
-        <div class="program-media" style="background-image:url('https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&amp;w=1200&amp;auto=format&amp;fit=crop');" role="img" aria-label="Парне заняття англійською онлайн">
-          <span class="program-badge">Формат 2</span>
-        </div>
-        <div class="program-text">
-          <h3>Парні заняття. <span>Навчання разом — живіше й веселіше.</span></h3>
-          <p>Ідеально, якщо хочете навчатись із другом, партнером чи колегою: спільна мотивація, більше практики діалогу і трохи здорового суперництва — усе це прискорює результат.</p>
-          <p>Програма й далі персональна: ми враховуємо рівень і цілі обох учасників, а вартість години ділиться на двох.</p>
-          <div class="program-price"><span class="num">2</span> Той самий підхід, що і в індивідуальних заняттях — але вдвох</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="services">
+  <section class="section alt" id="services">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Послуги</span>
         <h2>Формат навчання під вашу ціль і темп</h2>
-        <p>Крім індивідуальних та парних занять, є ще два способи прокачати розмовну англійську.</p>
+        <p>Оберіть формат — а програму й теми ми підбираємо особисто під вас на першій зустрічі.</p>
       </div>
-      <div class="photo-grid">
-        <div class="photo-card pc1" style="background-image:url('https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Індивідуальні заняття англійською">
-          <div class="photo-card-inner">
-            <span class="photo-card-tag">Формат</span>
+      <div class="services-grid">
+        <div class="svc-card sc1" style="background-image:url('https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Індивідуальні заняття англійською">
+          <div class="svc-inner">
+            <span class="svc-tag">Формат</span>
             <h3>Індивідуальні заняття</h3>
             <p>Персональна програма 1-на-1, повна увага викладача, темп та теми — під вашу ціль.</p>
           </div>
         </div>
-        <div class="photo-card pc2" style="background-image:url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Парні заняття англійською">
-          <div class="photo-card-inner">
-            <span class="photo-card-tag">Формат</span>
+        <div class="svc-card sc2" style="background-image:url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Парні заняття англійською">
+          <div class="svc-inner">
+            <span class="svc-tag">Формат</span>
             <h3>Парні заняття</h3>
             <p>Навчайтесь разом з другом, партнером чи колегою — живіше, веселіше й з додатковою мотивацією.</p>
           </div>
         </div>
-        <div class="photo-card pc3" style="background-image:url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Speaking Club — групова розмовна практика">
-          <div class="photo-card-inner">
-            <span class="photo-card-tag">Розмовна практика</span>
+        <div class="svc-card sc3" style="background-image:url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Speaking Club — групова розмовна практика">
+          <div class="svc-inner">
+            <span class="svc-tag">Розмовна практика</span>
             <h3>Speaking Club</h3>
             <p>Групова розмовна практика: живі теми, дискусії та реальна англійська у дружній атмосфері.</p>
           </div>
         </div>
-        <div class="photo-card pc4" style="background-image:url('https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Галузева англійська для професіоналів">
-          <div class="photo-card-inner">
-            <span class="photo-card-tag">Спеціалізація</span>
+        <div class="svc-card sc4" style="background-image:url('https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&amp;w=1000&amp;auto=format&amp;fit=crop');" role="img" aria-label="Галузева англійська для професіоналів">
+          <div class="svc-inner">
+            <span class="svc-tag">Спеціалізація</span>
             <h3>Галузева англійська</h3>
             <p>Психологія, фітнес, бізнес та інші сфери — лексика й кейси саме з вашої професії.</p>
           </div>
@@ -486,7 +438,7 @@
     </div>
   </section>
 
-  <section class="section alt" id="process">
+  <section class="section" id="process">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Як ми працюємо</span>
@@ -520,11 +472,11 @@
     </div>
   </section>
 
-  <section class="section" id="why">
+  <section class="section alt" id="why">
     <div class="wrap">
-      <div class="section-head">
+      <div class="section-head why-head-card">
         <span class="eyebrow">Чому обирають нас</span>
-        <h2>Не академічна суха англійська, а жива й персональна</h2>
+        <h2>Не академічна суха англійська, а жива й персоналізована</h2>
       </div>
       <div class="why-grid">
         <div class="why-card">
@@ -546,7 +498,7 @@
     </div>
   </section>
 
-  <section class="section alt" id="contact">
+  <section class="section" id="contact">
     <div class="wrap contact-grid">
       <div class="contact-info">
         <span class="eyebrow">Контакти</span>
@@ -672,6 +624,9 @@
         body: JSON.stringify(payload)
       });
       if(!res.ok) throw new Error('Request failed');
+
+      // Google Ads conversion tracking placeholder — вставити реальний label
+      // if (typeof gtag === 'function') { gtag('event', 'conversion', {'send_to': 'AW-XXXXXXXXXX/XXXXXXXXX'}); }
 
       document.getElementById('formStep').style.display = 'none';
       document.getElementById('successStep').style.display = 'block';
