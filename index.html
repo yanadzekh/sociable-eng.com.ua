@@ -243,11 +243,12 @@
   .why-head-card .eyebrow{ color:rgba(255,249,240,0.88);}
   .why-head-card .eyebrow::before{ background:var(--paper);}
   .why-head-card h2{ color:var(--paper); max-width:760px;}
-  .why-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+  .why-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
   .why-card{ padding:34px 26px; border-radius:var(--radius); color:var(--paper);}
   .why-card:nth-child(1){background:var(--violet);}
   .why-card:nth-child(2){background:var(--ink);}
   .why-card:nth-child(3){background:var(--flamingo);}
+  .why-card:nth-child(4){background:var(--lagoon);}
   .why-num{font-family:var(--mono); font-size:34px; font-weight:600; display:block;}
   .why-card h3{color:var(--paper); font-size:18px; margin-top:12px;}
   .why-card p{margin-top:10px; color:rgba(255,249,240,0.85); font-size:14.5px;}
@@ -283,6 +284,7 @@
   .form-success p{color:rgba(255,249,240,0.75); margin-top:10px; font-size:15px;}
   .form-success .btn{margin-top:20px; width:auto;}
   select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23FFF9F0' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 15px center;}
+  select option{ color:var(--ink); background:var(--paper);}
 
   footer{ padding:38px 0; border-top:1px solid var(--line);}
   .foot-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;}
@@ -291,6 +293,9 @@
   .foot-links a{font-size:13.5px; color:var(--ink-soft); text-decoration:none;}
   .foot-links a:hover{color:var(--ember);}
 
+  @media (max-width:1080px){
+    .why-grid{grid-template-columns:repeat(2,1fr);}
+  }
   @media (max-width:920px){
     .nav-links, .nav-cta{display:none;}
     .burger{display:block;}
@@ -299,7 +304,6 @@
     .services-grid{grid-template-columns:1fr;}
     .process-list{grid-template-columns:1fr 1fr; row-gap:34px;}
     .step-line{display:none;}
-    .why-grid{grid-template-columns:1fr;}
     .contact-grid{grid-template-columns:1fr;}
     .section{padding:64px 0;}
     .why-head-card{padding:30px 24px;}
@@ -307,6 +311,7 @@
   }
   @media (max-width:520px){
     .process-list{grid-template-columns:1fr;}
+    .why-grid{grid-template-columns:1fr;}
     .hero-cta{flex-direction:column; align-items:stretch;}
     .hero-cta .btn{width:100%;}
     .wrap{padding:0 18px;}
@@ -498,6 +503,11 @@
           <h3>Персональна програма</h3>
           <p>Тема, галузь і графік — підлаштовуються під вас, а не навпаки.</p>
         </div>
+        <div class="why-card">
+          <span class="why-num">Бонус</span>
+          <h3>Доступ до спільноти</h3>
+          <p>Наші клієнти отримують доступ до телеграм-каналу, де люди спілкуються живою англійською та підтримують один одного.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -514,7 +524,7 @@
             <a href="tel:+380672977106">+38 067 297 71 06</a>
           </li>
           <li>
-            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="#241C3D" stroke-width="1.6"/><path d="M4 7L12 13L20 7" stroke="#241C3D" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="#241C3D" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="#241C3D" stroke-width="1.6"/><circle cx="17.2" cy="6.8" r="1.1" fill="#241C3D"/></svg></span>
             <a href="https://www.instagram.com/sociable_eng?igsh=OTAzdnlxZHl3NGVz&amp;utm_source=qr" target="_blank" rel="noopener">Instagram</a>
           </li>
           <li>
@@ -542,7 +552,7 @@
               <input type="text" id="name" name="name" placeholder="Ваше ім'я" required>
             </div>
             <div class="field">
-              <label for="phone">Телефон або Instagram</label>
+              <label for="phone">Телефон або Telegram</label>
               <input type="text" id="phone" name="phone" placeholder="+380... або @нікнейм" required>
             </div>
             <div class="field">
