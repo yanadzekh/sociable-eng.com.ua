@@ -1,0 +1,7 @@
+name = "sociable-eng-com-ua"
+main = "src/index.js"
+compatibility_date = "2026-08-09"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
