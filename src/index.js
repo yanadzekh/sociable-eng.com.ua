@@ -69,13 +69,19 @@ async function handleSubmit(request, env) {
 
     if (!fsResponse.ok) {
       const errText = await fsResponse.text().catch(() => "");
-      throw new Error(`FormSubmit відповів помилкою: ${fsResponse.status} ${errText}`);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `FormSubmit відповів помилкою ${fsResponse.status}: ${errText.slice(0, 300)}`,
+        }),
+        { status: 502, headers: jsonHeaders }
+      );
     }
 
     return new Response(JSON.stringify({ ok: true }), { headers: jsonHeaders });
   } catch (err) {
     return new Response(
-      JSON.stringify({ ok: false, error: "Не вдалося надіслати заявку. Спробуйте пізніше." }),
+      JSON.stringify({ ok: false, error: `Мережева помилка: ${err && err.message ? err.message : String(err)}` }),
       { status: 502, headers: jsonHeaders }
     );
   }
