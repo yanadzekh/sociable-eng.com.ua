@@ -26,7 +26,7 @@ async function handleSubmit(request, env) {
   }
 
   // Honeypot: якщо приховане поле заповнене — це бот.
-  // Відповідаємо "успіхом", щоб бот не намагався далі, але лист не надсилаємо.
+  // Відповідаємо "успіхом", щоб бот не намагався далі, але нікуди не надсилаємо.
   if (data.website) {
     return new Response(JSON.stringify({ ok: true }), { headers: jsonHeaders });
   }
@@ -43,46 +43,146 @@ async function handleSubmit(request, env) {
     );
   }
 
-  const targetEmail = env.FORMSUBMIT_EMAIL;
-  if (!targetEmail) {
+  const lead = { name, phone, format, comment };
+
+  // Надсилаємо у всі три канали ПАРАЛЕЛЬНО.
+  // Кожен канал не залежить від інших: якщо один впаде, решта все одно спрацюють.
+  const results = await Promise.allSettled([
+    sendTelegram(lead, env),
+    sendGoogleSheets(lead, env),
+    sendFormSubmit(lead, env),
+  ]);
+
+  const [telegramResult, sheetsResult, formSubmitResult] = results;
+
+  const channelStatus = {
+    telegram: describeResult(telegramResult),
+    googleSheets: describeResult(sheetsResult),
+    formSubmit: describeResult(formSubmitResult),
+  };
+
+  const anySucceeded = Object.values(channelStatus).some((c) => c.ok);
+
+  if (!anySucceeded) {
+    // Усі три канали впали — це справжня проблема, повідомляємо користувача.
     return new Response(
-      JSON.stringify({ ok: false, error: "Email для заявок не налаштовано (FORMSUBMIT_EMAIL)" }),
-      { status: 500, headers: jsonHeaders }
+      JSON.stringify({ ok: false, error: "Не вдалося надіслати заявку жодним каналом", channels: channelStatus }),
+      { status: 502, headers: jsonHeaders }
     );
+  }
+
+  // Хоча б один канал спрацював — для відвідувача це успіх.
+  // channelStatus повертаємо для діагностики (можна прибрати пізніше з відповіді).
+  return new Response(
+    JSON.stringify({ ok: true, channels: channelStatus }),
+    { headers: jsonHeaders }
+  );
+}
+
+function describeResult(settledResult) {
+  if (settledResult.status === "fulfilled") {
+    return settledResult.value; // { ok: true } або { ok: false, error: "..." }
+  }
+  return { ok: false, error: settledResult.reason ? String(settledResult.reason.message || settledResult.reason) : "Невідома помилка" };
+}
+
+// ---------- Канал 1: Telegram-бот ----------
+async function sendTelegram(lead, env) {
+  const botToken = env.TELEGRAM_BOT_TOKEN;
+  const chatId = env.TELEGRAM_CHAT_ID;
+
+  if (!botToken || !chatId) {
+    return { ok: false, error: "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID не налаштовано" };
+  }
+
+  const text =
+    "📩 Нова заявка з сайту Sociable.eng\n\n" +
+    `👤 Ім'я: ${lead.name}\n` +
+    `📞 Телефон/Telegram: ${lead.phone}\n` +
+    `🎯 Формат: ${lead.format || "не вказано"}\n` +
+    `💬 Коментар: ${lead.comment || "—"}`;
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data || data.ok !== true) {
+      const detail = data && data.description ? data.description : `HTTP ${res.status}`;
+      return { ok: false, error: `Telegram: ${detail}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `Telegram: мережева помилка (${err && err.message ? err.message : err})` };
+  }
+}
+
+// ---------- Канал 2: Google Таблиця (через Google Apps Script Web App) ----------
+async function sendGoogleSheets(lead, env) {
+  const webhookUrl = env.GOOGLE_SHEETS_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    return { ok: false, error: "GOOGLE_SHEETS_WEBHOOK_URL не налаштовано" };
+  }
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        name: lead.name,
+        phone: lead.phone,
+        format: lead.format,
+        comment: lead.comment,
+        source: "sociable-eng.com.ua",
+      }),
+      redirect: "follow",
+    });
+
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => "");
+      return { ok: false, error: `Google Sheets: HTTP ${res.status} ${bodyText.slice(0, 200)}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `Google Sheets: мережева помилка (${err && err.message ? err.message : err})` };
+  }
+}
+
+// ---------- Канал 3: FormSubmit (email) ----------
+async function sendFormSubmit(lead, env) {
+  const targetEmail = env.FORMSUBMIT_EMAIL;
+
+  if (!targetEmail) {
+    return { ok: false, error: "FORMSUBMIT_EMAIL не налаштовано" };
   }
 
   try {
     const fsData = new FormData();
-    fsData.append("Ім'я", name);
-    fsData.append("Телефон / Telegram", phone);
-    fsData.append("Формат", format || "не вказано");
-    fsData.append("Коментар", comment || "—");
+    fsData.append("Ім'я", lead.name);
+    fsData.append("Телефон / Telegram", lead.phone);
+    fsData.append("Формат", lead.format || "не вказано");
+    fsData.append("Коментар", lead.comment || "—");
     fsData.append("_subject", "Нова заявка з сайту Sociable.eng");
     fsData.append("_template", "table");
     fsData.append("_captcha", "false");
 
-    const fsResponse = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`, {
+    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`, {
       method: "POST",
       headers: { Accept: "application/json" },
       body: fsData,
     });
 
-    if (!fsResponse.ok) {
-      const errText = await fsResponse.text().catch(() => "");
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: `FormSubmit відповів помилкою ${fsResponse.status}: ${errText.slice(0, 300)}`,
-        }),
-        { status: 502, headers: jsonHeaders }
-      );
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => "");
+      return { ok: false, error: `FormSubmit: HTTP ${res.status} ${bodyText.slice(0, 200)}` };
     }
-
-    return new Response(JSON.stringify({ ok: true }), { headers: jsonHeaders });
+    return { ok: true };
   } catch (err) {
-    return new Response(
-      JSON.stringify({ ok: false, error: `Мережева помилка: ${err && err.message ? err.message : String(err)}` }),
-      { status: 502, headers: jsonHeaders }
-    );
+    return { ok: false, error: `FormSubmit: мережева помилка (${err && err.message ? err.message : err})` };
   }
 }
