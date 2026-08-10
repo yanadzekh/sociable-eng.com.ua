@@ -9,25 +9,26 @@
  *     → якщо рядок не знайдено (наприклад, дані не збереглись) —
  *       створює новий рядок як запасний варіант.
  *
+ * ВИПРАВЛЕННЯ (порівняно з попередньою версією):
+ * Google Таблиці автоматично перетворюють номер телефону виду "+380968558031"
+ * на ЧИСЛО 380968558031, губ лячи знак "+". Через це порівняння телефонів
+ * "у лоб" (rowPhone === phone) ніколи не спрацьовувало, і скрипт щоразу
+ * створював новий рядок замість оновлення статусу анкети в існуючому.
+ * Тепер телефони порівнюються лише по цифрах (normalizePhoneDigits),
+ * а сам номер додатково примусово зберігається як текст, щоб "+" не губився.
+ *
  * Колонки (мають співпадати з вашою таблицею):
  * A Дата | B Ім'я | C Телефон | D Формат | E Коментар | F Статус |
  * G Статус анкети | H Джерело | I Наступний контакт | J Відповідальний |
  * K Коментар | L Сума угоди
  *
- * ЯК ПІДКЛЮЧИТИ (якщо ще не підключено):
- * 1. У вашій Google Таблиці: Розширення → Apps Script.
- * 2. Видаліть код-заглушку, вставте замість нього весь цей файл.
- * 3. Збережіть (Ctrl+S / Cmd+S).
- * 4. Розгорнути → Нове розгортання → тип "Веб-застосунок":
- *    - Execute as: Me
- *    - Who has access: Anyone (обов'язково!)
- * 5. Deploy → авторизуйтесь Google-акаунтом, дозвольте доступ.
- * 6. Скопіюйте URL, що закінчується на /exec —
- *    це GOOGLE_SHEETS_WEBHOOK_URL для Cloudflare.
- *
- * ЯКЩО ВЖЕ БУЛО ПІДКЛЮЧЕНО РАНІШЕ:
- * Просто замініть код на цей і зробіть "Нове розгортання" ще раз
- * (Розгорнути → Керування розгортаннями → значок олівця → New version → Deploy).
+ * ЯК ОНОВИТИ:
+ * У Google Таблиці: Розширення → Apps Script → виділити весь код,
+ * видалити, вставити цей файл цілком → зберегти (Ctrl+S) →
+ * Розгорнути → Керування розгортаннями → значок олівця →
+ * Version: New version → Deploy.
+ * URL webhook (GOOGLE_SHEETS_WEBHOOK_URL) залишається той самий,
+ * нічого міняти в Cloudflare не треба.
  */
 
 var COL = {
@@ -78,6 +79,20 @@ function appendLeadRow(sheet, data, anketaStatus) {
   // I, J, K, L (Наступний контакт, Відповідальний, Коментар, Сума угоди) —
   // лишаємо порожніми, заповнюються вручну командою.
   sheet.appendRow(row);
+
+  // Примусово форматуємо клітинку з телефоном як ТЕКСТ і перезаписуємо
+  // значення — інакше Google Таблиці самі перетворюють "+380..." на число
+  // і гублять знак "+".
+  var newRow = sheet.getLastRow();
+  sheet.getRange(newRow, COL.PHONE)
+    .setNumberFormat("@")
+    .setValue(data.phone || "");
+}
+
+// Прибирає все, крім цифр — щоб порівнювати телефони незалежно від того,
+// зберегла їх Таблиця як текст ("+380968558031") чи як число (380968558031).
+function normalizePhoneDigits(value) {
+  return String(value === null || value === undefined ? "" : value).replace(/[^0-9]/g, "");
 }
 
 // Шукає останній рядок цього клієнта (за телефоном) без заповненого
@@ -86,13 +101,16 @@ function updateAnketaStatus(sheet, phone) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2 || !phone) return false;
 
+  var targetDigits = normalizePhoneDigits(phone);
+  if (!targetDigits) return false;
+
   var numCols = Math.max(sheet.getLastColumn(), COL.ANKETA_STATUS);
   var values = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
 
   for (var i = values.length - 1; i >= 0; i--) {
-    var rowPhone = values[i][COL.PHONE - 1];
+    var rowDigits = normalizePhoneDigits(values[i][COL.PHONE - 1]);
     var rowAnketaStatus = values[i][COL.ANKETA_STATUS - 1];
-    if (rowPhone === phone && !rowAnketaStatus) {
+    if (rowDigits && rowDigits === targetDigits && !rowAnketaStatus) {
       sheet.getRange(i + 2, COL.ANKETA_STATUS).setValue("Клієнт перейшов до анкети");
       return true;
     }
