@@ -122,20 +122,29 @@ function validateChars(name, phone) {
   return null;
 }
 
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ---------- Надсилання у всі три канали ПАРАЛЕЛЬНО ----------
 async function sendAllChannels(lead, stage, env) {
   const results = await Promise.allSettled([
     sendTelegram(lead, stage, env),
     sendGoogleSheets(lead, stage, env),
-    sendFormSubmit(lead, stage, env),
+    sendResend(lead, stage, env),
   ]);
 
-  const [telegramResult, sheetsResult, formSubmitResult] = results;
+  const [telegramResult, sheetsResult, resendResult] = results;
 
   return {
     telegram: describeResult(telegramResult),
     googleSheets: describeResult(sheetsResult),
-    formSubmit: describeResult(formSubmitResult),
+    email: describeResult(resendResult),
   };
 }
 
@@ -221,39 +230,49 @@ async function sendGoogleSheets(lead, stage, env) {
   }
 }
 
-// ---------- Канал 3: FormSubmit (email) ----------
-async function sendFormSubmit(lead, stage, env) {
-  const targetEmail = env.FORMSUBMIT_EMAIL;
+// ---------- Канал 3: Email через Resend ----------
+// Лист шле з "onboarding@resend.dev" (стандартна тестова адреса Resend,
+// не потребує підтвердження власного домену) на RESEND_TO_EMAIL.
+// Коли буде свій домен на Cloudflare — можна верифікувати його в Resend
+// і надсилати з красивішої адреси (наприклад, leads@sociable-eng.com.ua).
+async function sendResend(lead, stage, env) {
+  const apiKey = env.RESEND_API_KEY;
+  const toEmail = env.RESEND_TO_EMAIL;
 
-  if (!targetEmail) {
-    return { ok: false, error: "FORMSUBMIT_EMAIL не налаштовано" };
+  if (!apiKey || !toEmail) {
+    return { ok: false, error: "RESEND_API_KEY / RESEND_TO_EMAIL не налаштовано" };
   }
 
   const label = stageLabel(stage);
+  const html = `
+    <h2>${label.emoji} ${escapeHtml(label.title)}</h2>
+    <p><b>Ім'я:</b> ${escapeHtml(lead.name)}</p>
+    <p><b>Телефон/Telegram:</b> ${escapeHtml(lead.phone)}</p>
+    <p><b>Формат:</b> ${escapeHtml(lead.format || "не вказано")}</p>
+    <p><b>Коментар:</b> ${escapeHtml(lead.comment || "—")}</p>
+  `.trim();
 
   try {
-    const fsData = new FormData();
-    fsData.append("Статус", label.title);
-    fsData.append("Ім'я", lead.name);
-    fsData.append("Телефон / Telegram", lead.phone);
-    fsData.append("Формат", lead.format || "не вказано");
-    fsData.append("Коментар", lead.comment || "—");
-    fsData.append("_subject", label.subject);
-    fsData.append("_template", "table");
-    fsData.append("_captcha", "false");
-
-    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`, {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Accept: "application/json" },
-      body: fsData,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: "Sociable.eng <onboarding@resend.dev>",
+        to: [toEmail],
+        subject: label.subject,
+        html,
+      }),
     });
 
     if (!res.ok) {
       const bodyText = await res.text().catch(() => "");
-      return { ok: false, error: `FormSubmit: HTTP ${res.status} ${bodyText.slice(0, 200)}` };
+      return { ok: false, error: `Resend: HTTP ${res.status} ${bodyText.slice(0, 200)}` };
     }
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: `FormSubmit: мережева помилка (${err && err.message ? err.message : err})` };
+    return { ok: false, error: `Resend: мережева помилка (${err && err.message ? err.message : err})` };
   }
 }
