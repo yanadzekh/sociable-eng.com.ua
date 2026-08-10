@@ -683,6 +683,7 @@
       // Google Ads conversion tracking placeholder — вставити реальний label
       // if (typeof gtag === 'function') { gtag('event', 'conversion', {'send_to': 'AW-XXXXXXXXXX/XXXXXXXXX'}); }
 
+      lastLeadData = payload;
       document.getElementById('formStep').style.display = 'none';
       document.getElementById('successStep').style.display = 'block';
     }catch(err){
@@ -691,6 +692,24 @@
       submitBtn.disabled = false;
       submitBtn.textContent = 'Надіслати заявку';
     }
+  });
+
+  // Відстеження переходу до анкети (Google Form).
+  // Посилання відкривається в новій вкладці (target="_blank"),
+  // тож можна просто "вистрелити" запит у фоні, не блокуючи перехід.
+  var lastLeadData = null;
+  var anketaLink = document.getElementById('anketaLink');
+  var anketaTracked = false;
+
+  anketaLink.addEventListener('click', function(){
+    if(anketaTracked) return; // не дублюємо, якщо клікнули кілька разів
+    anketaTracked = true;
+
+    fetch('/api/track-anketa', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(lastLeadData || {})
+    }).catch(function(){ /* тихо ігноруємо — це не критично для користувача */ });
   });
 </script>
 
