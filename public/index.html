@@ -622,6 +622,29 @@
   burgerBtn.addEventListener('click', openMenu);
   closeMenuBtn.addEventListener('click', closeMenu);
 
+  // Фільтрація символів під час набору
+  function attachCharFilter(inputEl, disallowedRegex){
+    inputEl.addEventListener('input', function(){
+      var start = this.selectionStart;
+      var before = this.value;
+      var filtered = before.replace(disallowedRegex, '');
+      if(filtered !== before){
+        var removedBeforeCursor = before.slice(0, start).replace(disallowedRegex, '').length;
+        this.value = filtered;
+        this.selectionStart = this.selectionEnd = removedBeforeCursor;
+      }
+    });
+  }
+
+  var nameInput = document.getElementById('name');
+  var phoneInput = document.getElementById('phone');
+
+  // Ім'я: лише літери (укр/рос/лат), пробіл, апостроф, дефіс
+  attachCharFilter(nameInput, /[^A-Za-zА-Яа-яЁёІіЇїЄєҐґ\s'’-]/g);
+
+  // Телефон або Telegram: цифри, + - ( ) пробіл, або @нікнейм (латиниця/цифри/підкреслення)
+  attachCharFilter(phoneInput, /[^0-9+\-() @A-Za-z_]/g);
+
   // Lead form submit -> Cloudflare Function -> Telegram
   var leadForm = document.getElementById('leadForm');
   var submitBtn = document.getElementById('submitBtn');
