@@ -43,6 +43,25 @@ async function handleSubmit(request, env) {
     );
   }
 
+  // Дублюємо клієнтську фільтрацію символів на сервері —
+  // на випадок, якщо хтось відправляє запит напряму, оминаючи форму.
+  const nameValidChars = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ\s'’-]+$/;
+  const phoneValidChars = /^[0-9+\-() @A-Za-z_]+$/;
+
+  if (!nameValidChars.test(name)) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Ім'я містить неприпустимі символи" }),
+      { status: 400, headers: jsonHeaders }
+    );
+  }
+
+  if (!phoneValidChars.test(phone)) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Телефон/Telegram містить неприпустимі символи" }),
+      { status: 400, headers: jsonHeaders }
+    );
+  }
+
   const lead = { name, phone, format, comment };
 
   // Надсилаємо у всі три канали ПАРАЛЕЛЬНО.
