@@ -2,9 +2,12 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Серверний маршрут для форми заявки
     if (url.pathname === "/api/submit" && request.method === "POST") {
       return handleSubmit(request, env);
+    }
+
+    if (url.pathname === "/api/track-anketa" && request.method === "POST") {
+      return handleTrackAnketa(request, env);
     }
 
     // Все інше — статичні файли з папки public/
@@ -12,6 +15,7 @@ export default {
   },
 };
 
+// ---------- Подія 1: нова заявка з форми ----------
 async function handleSubmit(request, env) {
   const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
 
@@ -26,7 +30,6 @@ async function handleSubmit(request, env) {
   }
 
   // Honeypot: якщо приховане поле заповнене — це бот.
-  // Відповідаємо "успіхом", щоб бот не намагався далі, але нікуди не надсилаємо.
   if (data.website) {
     return new Response(JSON.stringify({ ok: true }), { headers: jsonHeaders });
   }
@@ -43,70 +46,114 @@ async function handleSubmit(request, env) {
     );
   }
 
-  // Дублюємо клієнтську фільтрацію символів на сервері —
-  // на випадок, якщо хтось відправляє запит напряму, оминаючи форму.
-  const nameValidChars = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ\s'’-]+$/;
-  const phoneValidChars = /^[0-9+\-() @A-Za-z_]+$/;
-
-  if (!nameValidChars.test(name)) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Ім'я містить неприпустимі символи" }),
-      { status: 400, headers: jsonHeaders }
-    );
-  }
-
-  if (!phoneValidChars.test(phone)) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Телефон/Telegram містить неприпустимі символи" }),
-      { status: 400, headers: jsonHeaders }
-    );
+  const charsError = validateChars(name, phone);
+  if (charsError) {
+    return new Response(JSON.stringify({ ok: false, error: charsError }), {
+      status: 400,
+      headers: jsonHeaders,
+    });
   }
 
   const lead = { name, phone, format, comment };
 
-  // Надсилаємо у всі три канали ПАРАЛЕЛЬНО.
-  // Кожен канал не залежить від інших: якщо один впаде, решта все одно спрацюють.
-  const results = await Promise.allSettled([
-    sendTelegram(lead, env),
-    sendGoogleSheets(lead, env),
-    sendFormSubmit(lead, env),
-  ]);
-
-  const [telegramResult, sheetsResult, formSubmitResult] = results;
-
-  const channelStatus = {
-    telegram: describeResult(telegramResult),
-    googleSheets: describeResult(sheetsResult),
-    formSubmit: describeResult(formSubmitResult),
-  };
-
+  const channelStatus = await sendAllChannels(lead, "lead", env);
   const anySucceeded = Object.values(channelStatus).some((c) => c.ok);
 
   if (!anySucceeded) {
-    // Усі три канали впали — це справжня проблема, повідомляємо користувача.
     return new Response(
       JSON.stringify({ ok: false, error: "Не вдалося надіслати заявку жодним каналом", channels: channelStatus }),
       { status: 502, headers: jsonHeaders }
     );
   }
 
-  // Хоча б один канал спрацював — для відвідувача це успіх.
-  // channelStatus повертаємо для діагностики (можна прибрати пізніше з відповіді).
-  return new Response(
-    JSON.stringify({ ok: true, channels: channelStatus }),
-    { headers: jsonHeaders }
-  );
+  return new Response(JSON.stringify({ ok: true, channels: channelStatus }), { headers: jsonHeaders });
+}
+
+// ---------- Подія 2: клієнт перейшов до анкети ----------
+async function handleTrackAnketa(request, env) {
+  const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
+
+  let data;
+  try {
+    data = await request.json();
+  } catch (err) {
+    data = {};
+  }
+
+  const name = (data.name || "").toString().trim();
+  const phone = (data.phone || "").toString().trim();
+  const format = (data.format || "").toString().trim();
+  const comment = (data.comment || "").toString().trim();
+
+  // Дані тут не обов'язкові (можуть бути відсутні, якщо не вдалось зберегти
+  // на клієнті), але якщо вони є — перевіряємо ті самі символи.
+  if (name || phone) {
+    const charsError = validateChars(name || "Х", phone || "1");
+    if (charsError) {
+      return new Response(JSON.stringify({ ok: false, error: charsError }), {
+        status: 400,
+        headers: jsonHeaders,
+      });
+    }
+  }
+
+  const lead = { name: name || "не вказано", phone: phone || "не вказано", format, comment };
+
+  const channelStatus = await sendAllChannels(lead, "anketa_click", env);
+  const anySucceeded = Object.values(channelStatus).some((c) => c.ok);
+
+  // Ця подія не критична для користувача (він все одно вже переходить в анкету),
+  // тож завжди повертаємо ok:true, навіть якщо всі канали впали.
+  return new Response(JSON.stringify({ ok: true, tracked: anySucceeded, channels: channelStatus }), {
+    headers: jsonHeaders,
+  });
+}
+
+function validateChars(name, phone) {
+  const nameValidChars = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ\s'’-]+$/;
+  const phoneValidChars = /^[0-9+\-() @A-Za-z_]+$/;
+
+  if (!nameValidChars.test(name)) {
+    return "Ім'я містить неприпустимі символи";
+  }
+  if (!phoneValidChars.test(phone)) {
+    return "Телефон/Telegram містить неприпустимі символи";
+  }
+  return null;
+}
+
+// ---------- Надсилання у всі три канали ПАРАЛЕЛЬНО ----------
+async function sendAllChannels(lead, stage, env) {
+  const results = await Promise.allSettled([
+    sendTelegram(lead, stage, env),
+    sendGoogleSheets(lead, stage, env),
+    sendFormSubmit(lead, stage, env),
+  ]);
+
+  const [telegramResult, sheetsResult, formSubmitResult] = results;
+
+  return {
+    telegram: describeResult(telegramResult),
+    googleSheets: describeResult(sheetsResult),
+    formSubmit: describeResult(formSubmitResult),
+  };
 }
 
 function describeResult(settledResult) {
   if (settledResult.status === "fulfilled") {
-    return settledResult.value; // { ok: true } або { ok: false, error: "..." }
+    return settledResult.value;
   }
   return { ok: false, error: settledResult.reason ? String(settledResult.reason.message || settledResult.reason) : "Невідома помилка" };
 }
 
+function stageLabel(stage) {
+  return stage === "anketa_click"
+    ? { emoji: "✅", title: "Клієнт перейшов до анкети", subject: "Клієнт перейшов до анкети — Sociable.eng" }
+    : { emoji: "📩", title: "Нова заявка з сайту Sociable.eng", subject: "Нова заявка з сайту Sociable.eng" };
+}
+
 // ---------- Канал 1: Telegram-бот ----------
-async function sendTelegram(lead, env) {
+async function sendTelegram(lead, stage, env) {
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const chatId = env.TELEGRAM_CHAT_ID;
 
@@ -114,8 +161,9 @@ async function sendTelegram(lead, env) {
     return { ok: false, error: "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID не налаштовано" };
   }
 
+  const label = stageLabel(stage);
   const text =
-    "📩 Нова заявка з сайту Sociable.eng\n\n" +
+    `${label.emoji} ${label.title}\n\n` +
     `👤 Ім'я: ${lead.name}\n` +
     `📞 Телефон/Telegram: ${lead.phone}\n` +
     `🎯 Формат: ${lead.format || "не вказано"}\n` +
@@ -140,12 +188,14 @@ async function sendTelegram(lead, env) {
 }
 
 // ---------- Канал 2: Google Таблиця (через Google Apps Script Web App) ----------
-async function sendGoogleSheets(lead, env) {
+async function sendGoogleSheets(lead, stage, env) {
   const webhookUrl = env.GOOGLE_SHEETS_WEBHOOK_URL;
 
   if (!webhookUrl) {
     return { ok: false, error: "GOOGLE_SHEETS_WEBHOOK_URL не налаштовано" };
   }
+
+  const label = stageLabel(stage);
 
   try {
     const res = await fetch(webhookUrl, {
@@ -153,6 +203,7 @@ async function sendGoogleSheets(lead, env) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         timestamp: new Date().toISOString(),
+        status: label.title,
         name: lead.name,
         phone: lead.phone,
         format: lead.format,
@@ -173,20 +224,23 @@ async function sendGoogleSheets(lead, env) {
 }
 
 // ---------- Канал 3: FormSubmit (email) ----------
-async function sendFormSubmit(lead, env) {
+async function sendFormSubmit(lead, stage, env) {
   const targetEmail = env.FORMSUBMIT_EMAIL;
 
   if (!targetEmail) {
     return { ok: false, error: "FORMSUBMIT_EMAIL не налаштовано" };
   }
 
+  const label = stageLabel(stage);
+
   try {
     const fsData = new FormData();
+    fsData.append("Статус", label.title);
     fsData.append("Ім'я", lead.name);
     fsData.append("Телефон / Telegram", lead.phone);
     fsData.append("Формат", lead.format || "не вказано");
     fsData.append("Коментар", lead.comment || "—");
-    fsData.append("_subject", "Нова заявка з сайту Sociable.eng");
+    fsData.append("_subject", label.subject);
     fsData.append("_template", "table");
     fsData.append("_captcha", "false");
 
