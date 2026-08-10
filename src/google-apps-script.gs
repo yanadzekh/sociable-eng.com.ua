@@ -1,5 +1,5 @@
 /**
- * Google Apps Script — приймає заявки з сайту Sociable.eng
+ * Google Apps Script — приймає заявки та події з сайту Sociable.eng
  * і дописує їх рядком у Google Таблицю.
  *
  * ЯК ПІДКЛЮЧИТИ:
@@ -14,6 +14,10 @@
  * 7. Натисніть Deploy, дозвольте доступ (авторизуйтесь Google-акаунтом).
  * 8. Скопіюйте URL веб-застосунку (закінчується на /exec) —
  *    це і є GOOGLE_SHEETS_WEBHOOK_URL для Cloudflare.
+ *
+ * ЯКЩО ТАБЛИЦЯ ВЖЕ ІСНУЄ (оновлення з попередньої версії):
+ * Просто замініть код на цей і зробіть "Нове розгортання" ще раз —
+ * додасться нова колонка "Статус" для нових рядків.
  */
 
 function doPost(e) {
@@ -22,13 +26,14 @@ function doPost(e) {
 
     // Якщо це перший запис — додаємо заголовки
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["Дата", "Ім'я", "Телефон/Telegram", "Формат", "Коментар", "Джерело"]);
+      sheet.appendRow(["Дата", "Статус", "Ім'я", "Телефон/Telegram", "Формат", "Коментар", "Джерело"]);
     }
 
     var data = JSON.parse(e.postData.contents);
 
     sheet.appendRow([
       data.timestamp || new Date().toISOString(),
+      data.status || "Нова заявка з сайту Sociable.eng",
       data.name || "",
       data.phone || "",
       data.format || "",
