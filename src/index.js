@@ -195,15 +195,13 @@ async function sendGoogleSheets(lead, stage, env) {
     return { ok: false, error: "GOOGLE_SHEETS_WEBHOOK_URL не налаштовано" };
   }
 
-  const label = stageLabel(stage);
-
   try {
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         timestamp: new Date().toISOString(),
-        status: label.title,
+        stage: stage, // "lead" (нова заявка) або "anketa_click" (перехід до анкети)
         name: lead.name,
         phone: lead.phone,
         format: lead.format,
