@@ -57,21 +57,18 @@
 </script>
 
 <!--
-  Google tag (gtag.js) — Analytics (GA4) + Google Ads в одному коді.
+  Google tag (gtag.js) — Analytics (GA4) підключено: G-1XG7V5M9RS.
 
-  ЩО ЗАМІНИТИ:
-  1) У РЯДКУ НИЖЧЕ (src=...id=G-XXXXXXXXXX) замініть G-XXXXXXXXXX на ваш
-     Measurement ID з Google Analytics (Адмін → Потоки даних → ваш потік → Measurement ID).
-  2) У gtag('config', 'G-XXXXXXXXXX') замініть на той самий Measurement ID.
-  3) Якщо запускаєте Google Ads — розкоментуйте рядок нижче і вставте
-     ваш Conversion ID з Google Ads (Інструменти → Конверсії → деталі дії).
+  ЯКЩО ЗАПУСТИТЕ Google Ads: розкоментуйте рядок нижче
+  gtag('config', 'AW-XXXXXXXXXX') і вставте ваш Conversion ID з Google Ads
+  (Інструменти → Конверсії → деталі дії → send_to).
 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1XG7V5M9RS"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-XXXXXXXXXX');
+  gtag('config', 'G-1XG7V5M9RS');
   // gtag('config', 'AW-XXXXXXXXXX'); // Google Ads Conversion ID — розкоментувати після підключення Ads
 </script>
 
