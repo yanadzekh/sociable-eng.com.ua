@@ -56,17 +56,24 @@
 }
 </script>
 
-<!-- Google tag (gtag.js) — вставити реальні ID перед запуском реклами -->
 <!--
+  Google tag (gtag.js) — Analytics (GA4) + Google Ads в одному коді.
+
+  ЩО ЗАМІНИТИ:
+  1) У РЯДКУ НИЖЧЕ (src=...id=G-XXXXXXXXXX) замініть G-XXXXXXXXXX на ваш
+     Measurement ID з Google Analytics (Адмін → Потоки даних → ваш потік → Measurement ID).
+  2) У gtag('config', 'G-XXXXXXXXXX') замініть на той самий Measurement ID.
+  3) Якщо запускаєте Google Ads — розкоментуйте рядок нижче і вставте
+     ваш Conversion ID з Google Ads (Інструменти → Конверсії → деталі дії).
+-->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-XXXXXXXXXX');
-  // gtag('config', 'AW-XXXXXXXXXX'); // Google Ads ID
+  // gtag('config', 'AW-XXXXXXXXXX'); // Google Ads Conversion ID — розкоментувати після підключення Ads
 </script>
--->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -680,7 +687,10 @@
         throw new Error(serverError);
       }
 
-      // Google Ads conversion tracking placeholder — вставити реальний label
+      // Конверсія Google Ads — заявку успішно відправлено.
+      // Замініть AW-XXXXXXXXXX/XXXXXXXXX на ваш реальний "conversion label"
+      // з Google Ads (Інструменти → Конверсії → ваша дія → Налаштування тегу →
+      // "Встановити вручну" → скопіювати рядок send_to). Потім розкоментуйте.
       // if (typeof gtag === 'function') { gtag('event', 'conversion', {'send_to': 'AW-XXXXXXXXXX/XXXXXXXXX'}); }
 
       lastLeadData = payload;
